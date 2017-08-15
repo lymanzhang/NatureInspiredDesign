@@ -23,15 +23,17 @@ The objective of the Genetic Algorithm is to maximize the payoff of candidate so
 ## Procedure
 
 Algorithm (below) provides a pseudocode listing of the Genetic Algorithm for minimizing a cost function.
+```java
 
+```
 Pseudocode for the Genetic Algorithm
 
 ## Heuristics
 
 Binary strings (referred to as 'bitstrings') are the classical representation as they can be decoded to almost any desired representation. Real-valued and integer variables can be decoded using the binary coded decimal method, one's or two's complement methods, or the gray code method, the latter of which is generally preferred.
 Problem specific representations and customized genetic operators should be adopted, incorporating as much prior information about the problem domain as possible.
-The size of the population must be large enough to provide sufficient coverage of the domain and mixing of the useful sub-components of the solution [Goldberg1992].
-The Genetic Algorithm is classically configured with a high probability of recombination (such as 95%-99% of the selected population) and a low probability of mutation (such as  where  is the number of components in a solution) [Muhlenbein1992] [Back1993].
+The size of the population must be large enough to provide sufficient coverage of the domain and mixing of the useful sub-components of the solution [Goldberg1992](http://www.cleveralgorithms.com/nature-inspired/evolution/genetic_algorithm.html#Goldberg1992).
+The Genetic Algorithm is classically configured with a high probability of recombination (such as 95%-99% of the selected population) and a low probability of mutation (such as  where  is the number of components in a solution) [Muhlenbein1992](http://www.cleveralgorithms.com/nature-inspired/evolution/genetic_algorithm.html#Muhlenbein1992) [Back1993](http://www.cleveralgorithms.com/nature-inspired/evolution/genetic_algorithm.html#Back1993).
 The fitness-proportionate selection of candidate solutions to contribute to the next generation should be neither too greedy (to avoid the takeover of fitter candidate solutions) nor too random.
 
 ## Code Listing
@@ -41,6 +43,95 @@ Listing (below) provides an example of the Genetic Algorithm implemented in the 
 The Genetic Algorithm is implemented with a conservative configuration including binary tournament selection for the selection operator, one-point crossover for the recombination operator, and point mutations for the mutation operator.
 
 ```java
+# Genetic Algorithm in the Java Programming Language
+
+# The NatureInspiredDesign Project: https://github.com/lymanzhang/NatureInspiredDesign
+# (c) Copyright 2017 lymanZHANG. Some Rights Reserved. 
+```
+
+```ruby
+# Genetic Algorithm in the Ruby Programming Language
+
+# The Clever Algorithms Project: http://www.CleverAlgorithms.com
+# (c) Copyright 2010 Jason Brownlee. Some Rights Reserved. 
+# This work is licensed under a Creative Commons Attribution-Noncommercial-Share Alike 2.5 Australia License.
+
+def onemax(bitstring)
+  sum = 0
+  bitstring.size.times {|i| sum+=1 if bitstring[i].chr=='1'}
+  return sum
+end
+
+def random_bitstring(num_bits)
+  return (0...num_bits).inject(""){|s,i| s<<((rand<0.5) ? "1" : "0")}
+end
+
+def binary_tournament(pop)
+  i, j = rand(pop.size), rand(pop.size)
+  j = rand(pop.size) while j==i
+  return (pop[i][:fitness] > pop[j][:fitness]) ? pop[i] : pop[j]
+end
+
+def point_mutation(bitstring, rate=1.0/bitstring.size)
+  child = ""
+   bitstring.size.times do |i|
+     bit = bitstring[i].chr
+     child << ((rand()<rate) ? ((bit=='1') ? "0" : "1") : bit)
+  end
+  return child
+end
+
+def crossover(parent1, parent2, rate)
+  return ""+parent1 if rand()>=rate
+  point = 1 + rand(parent1.size-2)
+  return parent1[0...point]+parent2[point...(parent1.size)]
+end
+
+def reproduce(selected, pop_size, p_cross, p_mutation)
+  children = []  
+  selected.each_with_index do |p1, i|
+    p2 = (i.modulo(2)==0) ? selected[i+1] : selected[i-1]
+    p2 = selected[0] if i == selected.size-1
+    child = {}
+    child[:bitstring] = crossover(p1[:bitstring], p2[:bitstring], p_cross)
+    child[:bitstring] = point_mutation(child[:bitstring], p_mutation)
+    children << child
+    break if children.size >= pop_size
+  end
+  return children
+end
+
+def search(max_gens, num_bits, pop_size, p_crossover, p_mutation)
+  population = Array.new(pop_size) do |i|
+    {:bitstring=>random_bitstring(num_bits)}
+  end
+  population.each{|c| c[:fitness] = onemax(c[:bitstring])}
+  best = population.sort{|x,y| y[:fitness] <=> x[:fitness]}.first  
+  max_gens.times do |gen|
+    selected = Array.new(pop_size){|i| binary_tournament(population)}
+    children = reproduce(selected, pop_size, p_crossover, p_mutation)    
+    children.each{|c| c[:fitness] = onemax(c[:bitstring])}
+    children.sort!{|x,y| y[:fitness] <=> x[:fitness]}
+    best = children.first if children.first[:fitness] >= best[:fitness]
+    population = children
+    puts " > gen #{gen}, best: #{best[:fitness]}, #{best[:bitstring]}"
+    break if best[:fitness] == num_bits
+  end
+  return best
+end
+
+if __FILE__ == $0
+  # problem configuration
+  num_bits = 64
+  # algorithm configuration
+  max_gens = 100
+  pop_size = 100
+  p_crossover = 0.98
+  p_mutation = 1.0/num_bits
+  # execute the algorithm
+  best = search(max_gens, num_bits, pop_size, p_crossover, p_mutation)
+  puts "done! Solution: f=#{best[:fitness]}, s=#{best[:bitstring]}"
+end
 
 ```
 
@@ -63,22 +154,41 @@ The classical book on genetic algorithms as an optimization and machine learning
 ## Bibliography
 
 [Back1993]	T. Bäck, "[Optimal Mutation Rates in Genetic Search](http://scholar.google.com.au/scholar?q=Optimal+Mutation+Rates+in+Genetic+Search)", in Proceedings of the Fifth International Conference on Genetic Algorithms, 1993.
+
 [Bagley1967]	J. D. Bagley, "[The behavior of adaptive systems which employ genetic and correlation algorithms](http://scholar.google.com.au/scholar?q=The+behavior+of+adaptive+systems+which+employ+genetic+and+correlation++algorithms)", [PhD Thesis] University of Michigan, 1967.
-[Cavicchio1970]	D. J. Cavicchio Jr., "Adaptive Search Using Simulated Evolution", [PhD Thesis] The University of Michigan, 1970.
-[Frantz1972]	D. R. Frantz, "Non-linearities in genetic adaptive search", [PhD Thesis] University of Michigan, 1972.
-[Goldberg1989]	D. E. Goldberg, "Genetic Algorithms in Search, Optimization, and Machine Learning", Addison-Wesley, 1989.
-[Goldberg1992]	D. E. Goldberg and K. Deb and J. H. Clark, "Genetic Algorithms, Noise, and the Sizing of Populations", Complex Systems, 1992.
-[Goldberg1994]	D. E. Goldberg, "Genetic and evolutionary algorithms come of age", Communications of the ACM, 1994.
-[Goldberg2002]	D. E. Goldberg, "The design of innovation: Lessons from and for competent genetic algorithms", Springer, 2002.
-[Holland1962]	J. H. Holland, "Outline for a logical theory of adaptive systems", Journal of the ACM (JACM), 1962.
-[Holland1962a]	J. H. Holland, "Information processing in adaptive systems", in Processing of Information in the Nervous System, 1962.
-[Holland1969]	J. H. Holland, "Adaptive plans optimal for payoff-only environments", in Proceedings of the Second Hawaii Conference on Systems Sciences, 1969.
-[Holland1975]	J. H. Holland, "Adaptation in natural and artificial systems: An introductory analysis with applications to biology, control, and artificial intelligence", University of Michigan Press, 1975.
-[Hollstien1971]	R. B. Hollstien, "Artificial genetic adaptation in computer control systems", [PhD Thesis] The University of Michigan, 1971.
-[Jong1975]	K. A. De Jong, "An analysis of the behavior of a class of genetic adaptive systems", [PhD Thesis] University of Michigan Ann Arbor, MI, USA, 1975.
-[Jong1992]	K. A. De Jong, "Genetic Algorithms are NOT Function Optimizers", in Proceedings of the Second Workshop on Foundations of Genetic Algorithms, 1992.
-[Mitchell1995]	M. Mitchell, "Genetic algorithms: An overview", Complexity, 1995.
-[Mitchell1998]	M. Mitchell, "An Introduction to Genetic Algorithms", MIT Press, 1998.
-[Muhlenbein1992]	H. Mühlenbein, "How Genetic Algorithms Really Work: I. Mutation and Hillclimbing", in Parallel Problem Solving from Nature 2, 1992.
-[Rosenberg1967]	R. Rosenberg, "Simulation of genetic populations with biochemical properties", [PhD Thesis] University of Michigan, 1967.
-[Whitley1994]	D. Whitley, "A Genetic Algorithm Tutorial", Statistics and Computing, 1994.
+
+[Cavicchio1970]	D. J. Cavicchio Jr., "[Adaptive Search Using Simulated Evolution](http://scholar.google.com.au/scholar?q=Adaptive+Search+Using+Simulated+Evolution)", [PhD Thesis] The University of Michigan, 1970.
+
+[Frantz1972]	D. R. Frantz, "[Non-linearities in genetic adaptive search](http://scholar.google.com.au/scholar?q=Non-linearities+in+genetic+adaptive+search)", [PhD Thesis] University of Michigan, 1972.
+
+[Goldberg1989]	D. E. Goldberg, "[Genetic Algorithms in Search, Optimization, and Machine Learning](http://scholar.google.com.au/scholar?q=Genetic+Algorithms+in+Search,+Optimization,+and+Machine+Learning)", Addison-Wesley, 1989.
+
+[Goldberg1992]	D. E. Goldberg and K. Deb and J. H. Clark, "[Genetic Algorithms, Noise, and the Sizing of Populations](http://scholar.google.com.au/scholar?q=Genetic+Algorithms,+Noise,+and+the+Sizing+of+Populations)", Complex Systems, 1992.
+
+[Goldberg1994]	D. E. Goldberg, "[Genetic and evolutionary algorithms come of age](http://scholar.google.com.au/scholar?q=Genetic+and+evolutionary+algorithms+come+of+age)", Communications of the ACM, 1994.
+
+[Goldberg2002]	D. E. Goldberg, "[The design of innovation: Lessons from and for competent genetic algorithms](http://scholar.google.com.au/scholar?q=The+design+of+innovation:+Lessons+from+and+for+competent+genetic++algorithms)", Springer, 2002.
+
+[Holland1962]	J. H. Holland, "[Outline for a logical theory of adaptive systems](http://scholar.google.com.au/scholar?q=Outline+for+a+logical+theory+of+adaptive+systems)", Journal of the ACM (JACM), 1962.
+
+[Holland1962a]	J. H. Holland, "[Information processing in adaptive systems](http://scholar.google.com.au/scholar?q=Information+processing+in+adaptive+systems)", in Processing of Information in the Nervous System, 1962.
+
+[Holland1969]	J. H. Holland, "[Adaptive plans optimal for payoff-only environments](http://scholar.google.com.au/scholar?q=Adaptive+plans+optimal+for+payoff-only+environments)", in Proceedings of the Second Hawaii Conference on Systems Sciences, 1969.
+
+[Holland1975]	J. H. Holland, "[Adaptation in natural and artificial systems: An introductory analysis with applications to biology, control, and artificial intelligence](http://scholar.google.com.au/scholar?q=Adaptation+in+natural+and+artificial+systems:+An+introductory+analysis++with+applications+to+biology,+control,+and+artificial+intelligence)", University of Michigan Press, 1975.
+
+[Hollstien1971]	R. B. Hollstien, "[Artificial genetic adaptation in computer control systems](http://scholar.google.com.au/scholar?q=Artificial+genetic+adaptation+in+computer+control+systems)", [PhD Thesis] The University of Michigan, 1971.
+
+[Jong1975]	K. A. De Jong, "[An analysis of the behavior of a class of genetic adaptive systems](http://scholar.google.com.au/scholar?q=An+analysis+of+the+behavior+of+a+class+of+genetic+adaptive+systems)", [PhD Thesis] University of Michigan Ann Arbor, MI, USA, 1975.
+
+[Jong1992]	K. A. De Jong, "[Genetic Algorithms are NOT Function Optimizers](http://scholar.google.com.au/scholar?q=Genetic+Algorithms+are+NOT+Function+Optimizers)", in Proceedings of the Second Workshop on Foundations of Genetic Algorithms, 1992.
+
+[Mitchell1995]	M. Mitchell, "[Genetic algorithms: An overview](http://scholar.google.com.au/scholar?q=Genetic+algorithms:+An+overview)", Complexity, 1995.
+
+[Mitchell1998]	M. Mitchell, "[An Introduction to Genetic Algorithms](http://scholar.google.com.au/scholar?q=An+Introduction+to+Genetic+Algorithms)", MIT Press, 1998.
+
+[Muhlenbein1992]	H. Mühlenbein, "[How Genetic Algorithms Really Work: I. Mutation and Hillclimbing](http://scholar.google.com.au/scholar?q=How+Genetic+Algorithms+Really+Work:+I.+Mutation+and+Hillclimbing)", in Parallel Problem Solving from Nature 2, 1992.
+
+[Rosenberg1967]	R. Rosenberg, "[Simulation of genetic populations with biochemical properties](http://scholar.google.com.au/scholar?q=Simulation+of+genetic+populations+with+biochemical+properties)", [PhD Thesis] University of Michigan, 1967.
+
+[Whitley1994]	D. Whitley, "[A Genetic Algorithm Tutorial](http://scholar.google.com.au/scholar?q=A+Genetic+Algorithm+Tutorial)", Statistics and Computing, 1994.
